@@ -1,0 +1,19 @@
+{
+  "name": "foo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node -r dotenv/config index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "lodash": "^4.17.20",
+    "messaging-api-telegram": "^0.8.2",
+    "node-cron": "^2.0.3",
+    "puppeteer": "^5.2.1"
+  }
+}
