@@ -28,7 +28,7 @@ const {
 const client = Telegram.TelegramClient.connect(TELEGRAM_BOT_TOKEN)
 
 if (!TELEGRAM_BOT_TOKEN) { process.exit(1); }
-
+const knownValuesBackupFile = './lib/values.json';
 let isRunning = false;
 let cronExpression = null;
 // TODO - remove INTERVAL_IN_MINUTES validation after resolution of:
@@ -55,7 +55,7 @@ async function run() {
   let values = {};
   const allMessages = [];
 
-  fs.readFile('values.json')
+  fs.readFile(knownValuesBackupFile)
     .then((values) => knownValues = JSON.parse(values))
     .then(() => logger.debug('Restored backed-up data'))
     .catch((e) => logger.warn('No backup file found, running with no known data',e));
@@ -119,7 +119,7 @@ async function run() {
 
   if (allMessages.length) {
     try {
-      await fs.writeFile('values.json', JSON.stringify(values));
+      await fs.writeFile(knownValuesBackupFile, JSON.stringify(values));
     } catch (e) {
       logger.error('Unable to save known data', e);
     }
