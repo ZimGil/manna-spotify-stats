@@ -118,13 +118,16 @@ async function run() {
   });
 
   if (allMessages.length) {
+    logger.info('These values are new :)')
     try {
+      logger.debug('Backing up values');
       await fs.writeFile(knownValuesBackupFile, JSON.stringify(values));
     } catch (e) {
       logger.error('Unable to save known data', e);
     }
 
     try {
+      logger.info('Sending a message');
       const message = escapeReservedChars(allMessages.join('\n\n'));
       _.forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
     } catch (e) {
