@@ -4,6 +4,7 @@ const _ = require('lodash');
 const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
+const logger = require('./logger');
 
 const browserOptions = {
   headless: true,
@@ -47,47 +48,69 @@ if (!cronExpression) {
 }
 
 async function run() {
-  if (isRunning) { return; }
+  if (isRunning) { return logger.warn('Attempt to run while already running'); }
+  isRunning = true;
   let knownValues = {};
-  fs.readFile('values.json')
-    .then((values) => knownValues = JSON.parse(values));
-
-  const browser = await puppeteer.launch(browserOptions);
-  const page = await browser.newPage();
-  await page.goto(SPOTIFY_URL);
-  await page.setViewport({ width: 1536, height: 722 });
-  await page.waitForSelector('.content #login-username');
-  await page.type('.content #login-username', SPOTIFY_USERNAME);
-  await page.waitForSelector('.content #login-password');
-  await page.type('.content #login-password', SPOTIFY_PASSWORD);
-  await page.waitForSelector('.content #login-button');
-  await page.click('.content #login-button');
-  await page.waitFor(10000);
-  const values = await page.evaluate(() => {
-    const values = {};
-    Array.from(document.getElementsByTagName('tr')).forEach((node, index) => {
-      if (index === 0) { return; }
-      values[node.children[1].title] = {
-        streams: +node.children[3].title.replace(/,/g, ''),
-        listeners: +node.children[4].title.replace(/,/g, ''),
-        saves: +node.children[5].title.replace(/,/g, '')
-      }
-    });
-    return values;
-  });
-
+  let browser = { close: _.noop };
+  let values = {};
   const allMessages = [];
+
+  fs.readFile('values.json')
+    .then((values) => knownValues = JSON.parse(values))
+    .then(() => logger.debug('Restored backed-up data'))
+    .catch((e) => logger.warn('No backup file found, running with no known data',e));
+
+  try {
+    const browser = await puppeteer.launch(browserOptions);
+    const page = await browser.newPage();
+    await page.goto(SPOTIFY_URL);
+    logger.debug(`Navigated to ${SPOTIFY_URL}`);
+    await page.setViewport({ width: 1536, height: 722 });
+    await page.waitForSelector('.content #login-username');
+    await page.type('.content #login-username', SPOTIFY_USERNAME);
+    await page.waitForSelector('.content #login-password');
+    await page.type('.content #login-password', SPOTIFY_PASSWORD);
+    await page.waitForSelector('.content #login-button');
+    await page.click('.content #login-button');
+    await page.waitFor(10000);
+    logger.debug('Logged in');
+    values = await page.evaluate(() => {
+      const values = {};
+      Array.from(document.getElementsByTagName('tr')).forEach((node, index) => {
+        if (index === 0) { return; }
+        values[node.children[1].title] = {
+          streams: +node.children[3].title.replace(/,/g, ''),
+          listeners: +node.children[4].title.replace(/,/g, ''),
+          saves: +node.children[5].title.replace(/,/g, '')
+        }
+      });
+      return values;
+    });
+    logger.debug('Received Values', values);
+  } catch (e) {
+    logger.error(e);
+  } finally {
+    await browser.close();
+  }
+
   _.forEach(values, (songData, songName) => {
     const isChanged = _.reduce(songData, (isChanged, value, key) => {
       return isChanged || (!knownValues[songName] || knownValues[songName][key] !== value);
     }, false);
 
     if (isChanged) {
+      const currentStreams = values[songName].streams;
+      const currentListeners = values[songName].listeners;
+      const currentSaves = values[songName].saves;
+      const knownStreams = knownValues[songName] && knownValues[songName].streams;
+      const knownListeners = knownValues[songName] && knownValues[songName].listeners;
+      const knownSaves = knownValues[songName] && knownValues[songName].saves;
+
       const message = [
         `*${songName}:*`,
-        `Streams: ${values[songName].streams}`,
-        `Listeners: ${values[songName].listeners}`,
-        `Saves: ${values[songName].saves}`
+        `Streams: ${currentStreams} ${getPercentDiff(currentStreams, knownStreams)}`,
+        `Listeners: ${currentListeners} ${getPercentDiff(currentListeners, knownListeners)}`,
+        `Saves: ${currentSaves} ${getPercentDiff(currentSaves, knownSaves)}`
       ].join('\n');
 
       allMessages.push(message);
@@ -95,9 +118,29 @@ async function run() {
   });
 
   if (allMessages.length) {
-    await fs.writeFile('values.json', JSON.stringify(values));
-    _.forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, allMessages.join('\n\n'), { parse_mode: 'MarkdownV2' }));
+    try {
+      await fs.writeFile('values.json', JSON.stringify(values));
+    } catch (e) {
+      logger.error('Unable to save known data', e);
+    }
+
+    try {
+      const message = escapeReservedChars(allMessages.join('\n\n'));
+      _.forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
+    } catch (e) {
+      logger.error('Failed sending Telegram Messages', e);
+    }
   }
 
-  await browser.close();
+  isRunning = false;
+}
+
+function getPercentDiff(current, known) {
+  if (!known) { return ''; }
+  return `(+${((current - known) * 100) / known}%)`;
+}
+
+function escapeReservedChars(str) {
+  // https://core.telegram.org/bots/api#markdownv2-style
+  return str.replace(/[_\*\[\]\(\)~`>#+-=|{}\.!]/g, (s) => `\\${s}`);
 }
