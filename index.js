@@ -136,11 +136,11 @@ async function run() {
 }
 
 function getPercentDiff(current, known) {
-  if (!known) { return ''; }
+  if (!known || current === known) { return ''; }
   return `(+${((current - known) * 100) / known}%)`;
 }
 
 function escapeReservedChars(str) {
   // https://core.telegram.org/bots/api#markdownv2-style
-  return str.replace(/[_\*\[\]\(\)~`>#+-=|{}\.!]/g, (s) => `\\${s}`);
+  return str.replace(/[_\[\]\(\)~`>#+-=|{}\.!]/g, (s) => `\\${s}`);
 }
