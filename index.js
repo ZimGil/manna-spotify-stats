@@ -49,14 +49,8 @@ run();
 async function run() {
   if (isRunning) { return logger.warn('Attempt to run while already running'); }
   isRunning = true;
-  let knownValues = {};
   let browser = { close: _.noop };
   let page = null;
-
-  fs.readFile(knownValuesBackupFile)
-    .then((values) => knownValues = JSON.parse(values))
-    .then(() => logger.debug('Restored backed-up data'))
-    .catch((e) => logger.warn('No backup file found, running with no known data', e));
 
   try {
     browser = await puppeteer.launch(browserOptions);
@@ -141,6 +135,14 @@ async function run() {
   }
 
   async function getMessages(values) {
+    let knownValues = {};
+    try {
+      knownValues = await fs.readFile(knownValuesBackupFile).then(JSON.parse);
+      logger.debug('Restored backed-up data')
+    } catch (e) {
+      logger.warn('No backup file found, running with no known data', e)
+    }
+
     return _.reduce(values, (allMessages, songData, songName) => {
       const isChanged = _.reduce(songData, (isChanged, value, key) => {
         return isChanged || (!knownValues[songName] || knownValues[songName][key] !== value);
