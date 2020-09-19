@@ -64,6 +64,14 @@ exports.getMessage = async function (values, knownValues) {
   return escapeReservedChars(messages.join('\n\n'));;
 }
 
+exports.isBiggerValues = function(values, knownValues) {
+  _.reduce(values, (isBigger, songData, songName) => {
+    const isBiggerStreams = songData.streams > knownValues[songName].streams;
+    const isBiggerListeners = songData.listeners > knownValues[songName].listeners;
+    return isBigger || isBiggerStreams || isBiggerListeners;
+  }, false)
+}
+
 function getPercentDiff(current, known) {
   if (!known || current === known) { return ''; }
   const perecntage = ((current - known) * 100) / known;

@@ -5,7 +5,7 @@ const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
 const logger = require('./logger');
-const { getValues, getMessage, spotifyLogin } = require('./helpers');
+const { getValues, getMessage, spotifyLogin, isBiggerValues } = require('./helpers');
 
 const browserOptions = {
   headless: true,
@@ -81,6 +81,7 @@ async function run() {
     const values = await getValues(page);
     if (_.isEmpty(values)) { return logger.warn('No values received'); }
     if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
+    if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
 
     const message = await getMessage(values, knownValues);
