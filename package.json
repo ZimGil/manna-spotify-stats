@@ -1,5 +1,6 @@
 {
-  "name": "foo",
+  "name": "manna-spotify-stats",
+  "repository": "github:ZimGil/manna-spotify-stats",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,8 +8,8 @@
     "start": "node -r dotenv/config index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "ZimGil",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^8.2.0",
     "lodash": "^4.17.20",
@@ -16,5 +17,6 @@
     "messaging-api-telegram": "^0.8.2",
     "node-cron": "^2.0.3",
     "puppeteer": "^5.2.1"
-  }
+  },
+  "private": true
 }
