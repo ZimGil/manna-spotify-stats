@@ -69,6 +69,7 @@ async function run() {
   async function reloadAndCheck() {
     if (!firstRun) {
       try {
+        logger.debug('Relodaing');
         await page.reload({ waitUntil: 'networkidle0' });
         logger.debug('Reloaded the page');
       } catch (e) {
