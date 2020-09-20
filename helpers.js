@@ -53,11 +53,14 @@ exports.getValues = async function (page) {
 
 exports.getMessage = async function (values, knownValues) {
   const messages = _.map(values, ({ streams, listeners, saves }, songName) => {
+    const knownStreams = knownValues[songName] && knownValues[songName].streams;
+    const knownListeners = knownValues[songName] && knownValues[songName].listeners;
+    const knownSaves = knownValues[songName] && knownValues[songName].saves;
     return [
       `*${songName}:*`,
-      `Streams: ${streams} ${getPercentDiff(streams, knownValues[songName].streams)}`,
-      `Listeners: ${listeners} ${getPercentDiff(listeners, knownValues[songName].listeners)}`,
-      `Saves: ${saves} ${getPercentDiff(saves, knownValues[songName].saves)}`
+      `Streams: ${streams} ${getPercentDiff(streams, knownStreams)}`,
+      `Listeners: ${listeners} ${getPercentDiff(listeners, knownListeners)}`,
+      `Saves: ${saves} ${getPercentDiff(saves, knownSaves)}`
     ].join('\n')
   });
 
@@ -65,17 +68,19 @@ exports.getMessage = async function (values, knownValues) {
 }
 
 exports.isBiggerValues = function(values, knownValues) {
-  _.reduce(values, (isBigger, songData, songName) => {
-    const isBiggerStreams = songData.streams > knownValues[songName].streams;
-    const isBiggerListeners = songData.listeners > knownValues[songName].listeners;
+  return _.reduce(values, (isBigger, songData, songName) => {
+    if (!knownValues[songName]) { return true; }
+    const isBiggerStreams = songData.streams >= knownValues[songName].streams;
+    const isBiggerListeners = songData.listeners >= knownValues[songName].listeners;
     return isBigger || isBiggerStreams || isBiggerListeners;
   }, false)
 }
 
 function getPercentDiff(current, known) {
   if (!known || current === known) { return ''; }
-  const perecntage = ((current - known) * 100) / known;
-  return `(+${perecntage.toFixed(2)}%)`;
+  const perecntage = Math.abs((((current - known) * 100) / known).toFixed(2));
+  const operator = current > known ? '+' : '-';
+  return `(${operator}${perecntage.toFixed(2)}%)`;
 }
 
 function escapeReservedChars(str) {
