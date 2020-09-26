@@ -44,9 +44,8 @@ exports.getValues = async function (page) {
     logger.debug('Received Values', values);
 
   } catch (e) {
-    const screenshotPath = path.join(LOG_FILES_PATH, 'screenshot.png');
     logger.error('Error getting values', e);
-    await page.screenshot({path: screenshotPath});
+    await takeScreenshot(page);
   }
   return values;
 }
@@ -87,3 +86,12 @@ function escapeReservedChars(str) {
   // https://core.telegram.org/bots/api#markdownv2-style
   return str.replace(/[_\[\]\(\)~`>#+-=|{}\.!]/g, (s) => `\\${s}`);
 }
+
+async function takeScreenshot(page) {
+  const dateString = new Date().toISOString().replace(/:/g, '_');
+  const screenshotFileName = `${dateString}_screenshot.png`;
+  const screenshotPath = path.join(LOG_FILES_PATH, screenshotFileName);
+  logger.debug('Taking a screenshot at:', screenshotPath);
+  await page.screenshot({path: screenshotPath});
+}
+exports.takeScreenshot = takeScreenshot;

@@ -5,7 +5,7 @@ const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
 const logger = require('./logger');
-const { getValues, getMessage, spotifyLogin, isBiggerValues } = require('./helpers');
+const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot } = require('./helpers');
 
 const browserOptions = {
   headless: true,
@@ -80,12 +80,18 @@ async function run() {
     }
 
     const values = await getValues(page);
-    if (_.isEmpty(values)) { return logger.warn('No values received'); }
+    if (_.isEmpty(values)) {
+      logger.warn('No values received');
+      return await takeScreenshot(page);
+    }
     if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
 
     const message = await getMessage(values, knownValues);
+    knownValues = values;
+    logger.info('These values are new :)');
+
     try {
       logger.info('Sending a message');
       _.forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
@@ -93,8 +99,6 @@ async function run() {
       logger.error('Failed sending Telegram Messages', e);
     }
 
-    knownValues = values;
-    logger.info('These values are new :)');
     try {
       logger.debug('Backing up values');
       await fs.writeFile(knownValuesBackupFile, JSON.stringify(values));
