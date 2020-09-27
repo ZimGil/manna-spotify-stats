@@ -88,10 +88,10 @@ async function run() {
     if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
-    Screenshot.clearReason();
     const message = await getMessage(values, knownValues);
     knownValues = values;
     logger.info('These values are new :)');
+    Screenshot.clearReason();
 
     try {
       logger.info('Sending a message');
