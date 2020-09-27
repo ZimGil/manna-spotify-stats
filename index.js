@@ -6,6 +6,7 @@ const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
 const logger = require('./logger');
 const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot } = require('./helpers');
+const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
 const browserOptions = {
   headless: true,
@@ -82,12 +83,12 @@ async function run() {
     const values = await getValues(page);
     if (_.isEmpty(values)) {
       logger.warn('No values received');
-      return await takeScreenshot(page);
+      return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.NO_VALUES);
     }
     if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
-
+    Screenshot.clearReason();
     const message = await getMessage(values, knownValues);
     knownValues = values;
     logger.info('These values are new :)');

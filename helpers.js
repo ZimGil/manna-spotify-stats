@@ -1,12 +1,11 @@
-const path = require('path');
 const _ = require('lodash');
 const logger = require('./logger');
+const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
 const {
-  LOG_FILES_PATH,
   SPOTIFY_USERNAME,
   SPOTIFY_PASSWORD
- } = process.env;
+} = process.env;
 
 exports.spotifyLogin = async function (page) {
   const usernameSelector = '.content #login-username'
@@ -19,7 +18,7 @@ exports.spotifyLogin = async function (page) {
     await page.type(usernameSelector, SPOTIFY_USERNAME);
     await page.type(passwordSelector, SPOTIFY_PASSWORD);
     await page.click(buttonSelector);
-    await page.waitForNavigation({waitUntil: 'networkidle0'});
+    await page.waitForNavigation({ waitUntil: 'networkidle0' });
     logger.debug('Logged in');
   } catch (e) {
     logger.error('Error logging into spotify', e);
@@ -45,7 +44,7 @@ exports.getValues = async function (page) {
 
   } catch (e) {
     logger.error('Error getting values', e);
-    await takeScreenshot(page);
+    await Screenshot.takeScreenshot(page, screenshotReasonsEnum.ERROR_GETTING_VALUES);
   }
   return values;
 }
@@ -66,7 +65,7 @@ exports.getMessage = async function (values, knownValues) {
   return escapeReservedChars(messages.join('\n\n'));;
 }
 
-exports.isBiggerValues = function(values, knownValues) {
+exports.isBiggerValues = function (values, knownValues) {
   return _.reduce(values, (isBigger, songData, songName) => {
     if (!knownValues[songName]) { return true; }
     const isBiggerStreams = songData.streams >= knownValues[songName].streams;
@@ -86,12 +85,3 @@ function escapeReservedChars(str) {
   // https://core.telegram.org/bots/api#markdownv2-style
   return str.replace(/[_\[\]\(\)~`>#+-=|{}\.!]/g, (s) => `\\${s}`);
 }
-
-async function takeScreenshot(page) {
-  const dateString = new Date().toISOString().replace(/:/g, '_');
-  const screenshotFileName = `${dateString}_screenshot.png`;
-  const screenshotPath = path.join(LOG_FILES_PATH, screenshotFileName);
-  logger.debug('Taking a screenshot at:', screenshotPath);
-  await page.screenshot({path: screenshotPath});
-}
-exports.takeScreenshot = takeScreenshot;
