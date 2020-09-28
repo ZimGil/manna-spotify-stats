@@ -32,7 +32,8 @@ class Screenshot {
 const screenshotReasonsEnum = {
   NO_REASON: null,
   ERROR_GETTING_VALUES: 1,
-  NO_VALUES: 2
+  NO_VALUES: 2,
+  MISSING_VALUES: 3
 };
 
 exports.Screenshot = new Screenshot();

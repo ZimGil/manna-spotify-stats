@@ -80,16 +80,28 @@ async function run() {
       firstRun = false;
     }
 
-    const values = await getValues(page);
+    const baseValues = await getValues(page);
+
+    // Filter out disabled songs
+    const values = _.reduce(baseValues, (values, value, songName) => {
+      if (songName !== '') {
+        values[songName] = value;
+      }
+      return values;
+    }, {});
+
     if (_.isEmpty(values)) {
       logger.warn('No values received');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.NO_VALUES);
+    }
+    if (_.size(vlaues) !== _.size(baseValues)) {
+      logger.warn('Some Values are missing');
+      return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.MISSING_VALUES);
     }
     if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
     const message = await getMessage(values, knownValues);
-    knownValues = values;
     logger.info('These values are new :)');
     Screenshot.clearReason();
 
@@ -100,9 +112,11 @@ async function run() {
       logger.error('Failed sending Telegram Messages', e);
     }
 
+    // Update known values with the new values
+    _.assign(knownValues,values);
     try {
       logger.debug('Backing up values');
-      await fs.writeFile(knownValuesBackupFile, JSON.stringify(values));
+      await fs.writeFile(knownValuesBackupFile, JSON.stringify(knownValues));
     } catch (e) {
       logger.error('Unable to save known data', e);
     }
