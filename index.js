@@ -90,7 +90,7 @@ async function run() {
       return values;
     }, {});
 
-    if (_.isEmpty(values)) {
+    if (_.isEmpty(baseValues)) {
       logger.warn('No values received');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.NO_VALUES);
     }
