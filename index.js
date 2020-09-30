@@ -94,7 +94,7 @@ async function run() {
       logger.warn('No values received');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.NO_VALUES);
     }
-    if (_.size(vlaues) !== _.size(baseValues)) {
+    if (_.size(values) !== _.size(baseValues)) {
       logger.warn('Some Values are missing');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.MISSING_VALUES);
     }
