@@ -83,12 +83,7 @@ async function run() {
     const baseValues = await getValues(page);
 
     // Filter out disabled songs
-    const values = _.reduce(baseValues, (values, value, songName) => {
-      if (songName !== '') {
-        values[songName] = value;
-      }
-      return values;
-    }, {});
+    const values = _.pickBy(baseValues, (v, songName) => songName);
 
     if (_.isEmpty(baseValues)) {
       logger.warn('No values received');
@@ -113,7 +108,7 @@ async function run() {
     }
 
     // Update known values with the new values
-    _.assign(knownValues,values);
+    _.assign(knownValues, values);
     try {
       logger.debug('Backing up values');
       await fs.writeFile(knownValuesBackupFile, JSON.stringify(knownValues));
