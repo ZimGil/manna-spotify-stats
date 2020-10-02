@@ -40,31 +40,27 @@ class Screenshot {
   }
 
   #sendScreenshot = async () => {
-    if (TELEGRAM_ERROR_CHAT_ID && SCREENSHOT_URL) {
-      const screenshotUrl = `${SCREENSHOT_URL}${this.#lastFileName}`;
-      const caption = `Bot Error: ${this.#reason}`.replace(/_/g, ' ');
-      const options = {
-        caption,
-        // parse_mode: 'MarkdownV2'
-      };
-      logger.info('Sending screenshot');
+    if (!TELEGRAM_ERROR_CHAT_ID) { return; }
+    const screenshotUrl = `${SCREENSHOT_URL}${this.#lastFileName}`;
+    const caption = `Bot Error: ${this.#reason}`.replace(/_/g, ' ');
+    const options = { caption };
+    logger.info('Sending screenshot');
+    forEach(TELEGRAM_ERROR_CHAT_ID.split(','), async (chatId) => {
       try {
-        forEach(TELEGRAM_ERROR_CHAT_ID.split(','), async (chatId) => {
-          return await client.sendPhoto(chatId, screenshotUrl, options)
-            .catch(async (e) => {
-              logger.error(e);
-              if (e.message.includes('failed to get HTTP URL content')) {
-                const msg = `${caption}\nSee screenshot named ${this.#lastFileName}`;
-                return await client.sendMessage(chatId, msg);
-              }
-            });
-        });
-      } catch (e) {
-        logger.error('Failed sending screenshot', e);
-      }
-    }
+        return await client.sendPhoto(chatId, screenshotUrl, options)
+          .catch(async (e) => {
+            if (e.message.includes('failed to get HTTP URL content')) {
+              logger.warn(`Failed to get HTTP URL content [${screenshotUrl}]`);
+              const msg = `${caption}\nSee screenshot named ${this.#lastFileName}`;
+              return await client.sendMessage(chatId, msg);
+            }
+            logger.error(e);
+          });
+        } catch (e) {
+          logger.error('Failed sending screenshot', e);
+        }
+      });
   }
-
 }
 
 const screenshotReasonsEnum = {

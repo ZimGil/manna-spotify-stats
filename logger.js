@@ -9,7 +9,6 @@ if (process.env.NODE_ENV !== 'production') {
   ipChangeAppenders.push('stdout');
 }
 
-
 log4js.configure({
   appenders: {
     stdout: { type: 'stdout' },
