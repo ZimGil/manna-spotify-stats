@@ -1,5 +1,5 @@
 const path = require('path');
-const _ = require('lodash');
+const forEach = require('lodash/forEach');
 const Telegram = require('messaging-api-telegram');
 const logger = require('./logger');
 
@@ -49,7 +49,7 @@ class Screenshot {
       };
       logger.info('Sending screenshot');
       try {
-        _.forEach(TELEGRAM_ERROR_CHAT_ID.split(','), async (chatId) => {
+        forEach(TELEGRAM_ERROR_CHAT_ID.split(','), async (chatId) => {
           return await client.sendPhoto(chatId, screenshotUrl, options)
             .catch(async (e) => {
               logger.error(e);

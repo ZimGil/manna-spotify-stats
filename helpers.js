@@ -1,4 +1,5 @@
-const _ = require('lodash');
+const map = require('lodash/map');
+const reduce = require('lodash/reduce');
 const logger = require('./logger');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
@@ -50,7 +51,7 @@ exports.getValues = async function (page) {
 }
 
 exports.getMessage = async function (values, knownValues) {
-  const messages = _.map(values, ({ streams, listeners, saves }, songName) => {
+  const messages = map(values, ({ streams, listeners, saves }, songName) => {
     const knownStreams = knownValues[songName] && knownValues[songName].streams;
     const knownListeners = knownValues[songName] && knownValues[songName].listeners;
     const knownSaves = knownValues[songName] && knownValues[songName].saves;
@@ -66,7 +67,7 @@ exports.getMessage = async function (values, knownValues) {
 }
 
 exports.isBiggerValues = function (values, knownValues) {
-  return _.reduce(values, (isBigger, songData, songName) => {
+  return reduce(values, (isBigger, songData, songName) => {
     if (!knownValues[songName]) { return true; }
     const isBiggerStreams = songData.streams >= knownValues[songName].streams;
     const isBiggerListeners = songData.listeners >= knownValues[songName].listeners;

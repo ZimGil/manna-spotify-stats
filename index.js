@@ -1,9 +1,15 @@
 const os = require('os');
 const fs = require('fs').promises;
-const _ = require('lodash');
 const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
+const assign = require('lodash/assign');
+const forEach = require('lodash/forEach');
+const isEmpty = require('lodash/isEmpty');
+const isEqual = require('lodash/isEqual');
+const noop = require('lodash/noop');
+const pickBy = require('lodash/pickBy');
+const size = require('lodash/size');
 const logger = require('./logger');
 const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot } = require('./helpers');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
@@ -44,7 +50,7 @@ if (cron.validate(CRON_EXPRESSION)) {
 run();
 
 async function run() {
-  let browser = { close: _.noop };
+  let browser = { close: noop };
   let page = null;
 
   try {
@@ -83,17 +89,17 @@ async function run() {
     const baseValues = await getValues(page);
 
     // Filter out disabled songs
-    const values = _.pickBy(baseValues, (v, songName) => songName);
+    const values = pickBy(baseValues, (v, songName) => songName);
 
-    if (_.isEmpty(baseValues)) {
+    if (isEmpty(baseValues)) {
       logger.warn('No values received');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.NO_VALUES);
     }
-    if (_.size(values) !== _.size(baseValues)) {
+    if (size(values) !== size(baseValues)) {
       logger.warn('Some Values are missing');
       return await Screenshot.takeScreenshot(page, screenshotReasonsEnum.MISSING_VALUES);
     }
-    if (_.isEqual(values, knownValues)) { return logger.debug('Already known values'); }
+    if (isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
     const message = await getMessage(values, knownValues);
@@ -102,13 +108,13 @@ async function run() {
 
     try {
       logger.info('Sending a message');
-      _.forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
+      forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
     } catch (e) {
       logger.error('Failed sending Telegram Messages', e);
     }
 
     // Update known values with the new values
-    _.assign(knownValues, values);
+    assign(knownValues, values);
     try {
       logger.debug('Backing up values');
       await fs.writeFile(knownValuesBackupFile, JSON.stringify(knownValues));
