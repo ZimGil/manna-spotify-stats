@@ -19,7 +19,6 @@ exports.spotifyLogin = async function (page) {
     await page.type(usernameSelector, SPOTIFY_USERNAME);
     await page.type(passwordSelector, SPOTIFY_PASSWORD);
     await page.click(buttonSelector);
-    await page.waitForNavigation({ waitUntil: 'networkidle0' });
     logger.debug('Logged in');
   } catch (e) {
     logger.error('Error logging into spotify', e);
@@ -73,6 +72,10 @@ exports.isBiggerValues = function (values, knownValues) {
     const isBiggerListeners = songData.listeners >= knownValues[songName].listeners;
     return isBigger || isBiggerStreams || isBiggerListeners;
   }, false)
+}
+
+exports.waitForData = async function (page) {
+  return await page.waitForRequest('https://tracing.spotify.com/api/v0/reports');
 }
 
 function getPercentDiff(current, known) {

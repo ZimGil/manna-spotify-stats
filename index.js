@@ -11,7 +11,7 @@ const noop = require('lodash/noop');
 const pickBy = require('lodash/pickBy');
 const size = require('lodash/size');
 const logger = require('./logger');
-const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot } = require('./helpers');
+const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot, waitForData } = require('./helpers');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
 const browserOptions = {
@@ -67,6 +67,7 @@ async function run() {
     logger.debug(`Navigated to ${SPOTIFY_URL}`);
     await page.setViewport({ width: 1536, height: 722 });
     await spotifyLogin(page);
+    await waitForData(page);
     cron.schedule(cronExpression, reloadAndCheck);
   } catch (e) {
     logger.error(e);
@@ -77,7 +78,8 @@ async function run() {
     if (!firstRun) {
       try {
         logger.debug('Relodaing');
-        await page.reload({ waitUntil: 'networkidle0' });
+        await page.reload();
+        await waitForData(page);
         logger.debug('Reloaded the page');
       } catch (e) {
         logger.error('Failed reloading', e);
