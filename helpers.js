@@ -3,6 +3,8 @@ const reduce = require('lodash/reduce');
 const logger = require('./logger');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
+const dataRowsSelector = '[data-testid=songs-table] tbody > tr';
+
 const {
   SPOTIFY_USERNAME,
   SPOTIFY_PASSWORD
@@ -28,18 +30,17 @@ exports.spotifyLogin = async function (page) {
 exports.getValues = async function (page) {
   let values = {}
   try {
-    values = await page.evaluate(() => {
-      const values = {};
-      Array.from(document.getElementsByTagName('tr')).forEach((node, index) => {
-        if (index === 0) { return; }
+    values = await page.evaluate((dataRowsSelector) => {
+      const rows = document.querySelectorAll(dataRowsSelector);
+      return Array.from(rows).reduce((values, node) => {
         values[node.children[1].title] = {
           streams: +node.children[3].title.replace(/,/g, ''),
           listeners: +node.children[4].title.replace(/,/g, ''),
           saves: +node.children[5].title.replace(/,/g, '')
         }
-      });
-      return values;
-    });
+        return values;
+      }, {});
+    }, dataRowsSelector);
     logger.debug('Received Values', values);
 
   } catch (e) {
@@ -75,7 +76,7 @@ exports.isBiggerValues = function (values, knownValues) {
 }
 
 exports.waitForData = async function (page) {
-  return await page.waitForRequest('https://tracing.spotify.com/api/v0/reports');
+  return await page.waitForSelector(dataRowsSelector, { visible: true });
 }
 
 function getPercentDiff(current, known) {
