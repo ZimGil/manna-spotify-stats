@@ -49,6 +49,7 @@ run();
 async function run() {
   let browser = { close: noop };
   let page = null;
+  const reloadTask = cron.schedule(cronExpression, reloadAndCheck, { scheduled: false });
 
   try {
     browser = await puppeteer.launch(browserOptions);
@@ -58,9 +59,10 @@ async function run() {
     await page.setViewport({ width: 1536, height: 722 });
     await spotifyLogin(page);
     await waitForData(page);
-    cron.schedule(cronExpression, reloadAndCheck);
+    reloadTask.start();
   } catch (e) {
     logger.error(e);
+    reloadTask.destroy();
     await browser.close();
   }
 
@@ -73,6 +75,8 @@ async function run() {
         logger.debug('Reloaded the page');
       } catch (e) {
         logger.error('Failed reloading', e);
+        await stop();
+        return;
       }
     } else {
       firstRun = false;
@@ -106,5 +110,10 @@ async function run() {
     } catch (e) {
       logger.error('Failed sending Telegram Messages', e);
     }
+  }
+
+  async function stop() {
+    reloadTask.stop();
+    await browser.close();
   }
 }
