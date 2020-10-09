@@ -32,9 +32,10 @@ class ValuesManager {
     const date = new Date().toISOString();
 
     // Update #lastValues with the new values and save the latest known values.
-    values = assign(this.#lastValues, values);
+    values = assign({}, this.#lastValues, values);
     this.#allValues[date] = { values, date };
-    return this.saveValues();
+    return this.saveValues()
+      .then(() => this.#lastValues = values);
   }
 
   async updateFilePath(options = {startup: false}) {
