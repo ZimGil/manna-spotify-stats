@@ -12,7 +12,7 @@ class ValuesManager {
   #valuesFilePath;
 
   constructor() {
-    this.updateFilePath();
+    this.updateFilePath({startup: true});
     try {
       this.#allValues = fs.readJSONSync(this.#valuesFilePath,);
       logger.debug(`Restored data from: ${this.#valuesFilePath}`);
@@ -37,14 +37,15 @@ class ValuesManager {
     return this.saveValues();
   }
 
-  async updateFilePath() {
+  async updateFilePath(options = {startup: false}) {
     const date = new Date();
     const newFilePath = path.join(MANNA_DATA_DIR, `${date.getFullYear()}-values.json`);
     if (this.#valuesFilePath === newFilePath) { return false; }
     this.#valuesFilePath = newFilePath;
     const isFileExist = await fs.pathExists(this.#valuesFilePath);
     if (isFileExist) {
-      logger.warn('Changed data file path to an existing one');
+      // Don't log on init
+      !options.startup && logger.warn('Changed data file path to an existing one');
       return false;
     }
     logger.debug(`Creating a new data file: ${this.#valuesFilePath}`);
