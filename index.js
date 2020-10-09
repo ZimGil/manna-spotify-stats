@@ -1,9 +1,7 @@
 const os = require('os');
-const fs = require('fs').promises;
 const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
-const assign = require('lodash/assign');
 const forEach = require('lodash/forEach');
 const isEmpty = require('lodash/isEmpty');
 const isEqual = require('lodash/isEqual');
@@ -11,8 +9,9 @@ const noop = require('lodash/noop');
 const pickBy = require('lodash/pickBy');
 const size = require('lodash/size');
 const logger = require('./logger');
-const { getValues, getMessage, spotifyLogin, isBiggerValues, takeScreenshot, waitForData } = require('./helpers');
+const { getValues, getMessage, spotifyLogin, isBiggerValues, waitForData } = require('./helpers');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
+const valuesManager = require('./values-manager');
 
 const browserOptions = {
   headless: true,
@@ -33,8 +32,6 @@ const {
 const client = Telegram.TelegramClient.connect(TELEGRAM_BOT_TOKEN)
 
 if (!TELEGRAM_BOT_TOKEN) { process.exit(1); }
-const knownValuesBackupFile = './lib/values.json';
-let knownValues = {};
 let cronExpression = null;
 let firstRun = true;
 // TODO - remove INTERVAL_IN_MINUTES validation after resolution of:
@@ -52,13 +49,6 @@ run();
 async function run() {
   let browser = { close: noop };
   let page = null;
-
-  try {
-    knownValues = await fs.readFile(knownValuesBackupFile).then(JSON.parse);
-    logger.debug('Restored backed-up data')
-  } catch (e) {
-    logger.warn('No backup file found, running with no known data', e)
-  }
 
   try {
     browser = await puppeteer.launch(browserOptions);
@@ -88,6 +78,7 @@ async function run() {
       firstRun = false;
     }
 
+    const knownValues = valuesManager.getLastValues();
     const baseValues = await getValues(page);
 
     // Filter out disabled songs
@@ -104,8 +95,9 @@ async function run() {
     if (isEqual(values, knownValues)) { return logger.debug('Already known values'); }
     if (!isBiggerValues(values, knownValues)) { return logger.warn('Received lower values :/', values, knownValues); }
 
-    const message = await getMessage(values, knownValues);
     logger.info('These values are new :)');
+    valuesManager.addValues(values);
+    const message = await getMessage(values, knownValues);
     Screenshot.clearReason();
 
     try {
@@ -113,15 +105,6 @@ async function run() {
       forEach(TELEGRAM_CHAT_IDS.split(','), async (chatId) => await client.sendMessage(chatId, message, { parse_mode: 'MarkdownV2' }));
     } catch (e) {
       logger.error('Failed sending Telegram Messages', e);
-    }
-
-    // Update known values with the new values
-    assign(knownValues, values);
-    try {
-      logger.debug('Backing up values');
-      await fs.writeFile(knownValuesBackupFile, JSON.stringify(knownValues));
-    } catch (e) {
-      logger.error('Unable to save known data', e);
     }
   }
 }

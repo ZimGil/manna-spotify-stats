@@ -1,5 +1,6 @@
 .env
 values.json
+data
 
 # Logs
 logs
