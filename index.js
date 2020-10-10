@@ -33,7 +33,6 @@ const client = Telegram.TelegramClient.connect(TELEGRAM_BOT_TOKEN)
 
 if (!TELEGRAM_BOT_TOKEN) { process.exit(1); }
 let cronExpression = null;
-let firstRun = true;
 // TODO - remove INTERVAL_IN_MINUTES validation after resolution of:
 // https://github.com/node-cron/node-cron/issues/226
 const cronIntervalInMinutes = CRON_INTERVAL_IN_MINUTES && `*/${CRON_INTERVAL_IN_MINUTES} * * * *`;
@@ -67,19 +66,15 @@ async function run() {
   }
 
   async function reloadAndCheck() {
-    if (!firstRun) {
-      try {
-        logger.debug('Relodaing');
-        await page.reload();
-        await waitForData(page);
-        logger.debug('Reloaded the page');
-      } catch (e) {
-        logger.error('Failed reloading', e);
-        await stop();
-        return;
-      }
-    } else {
-      firstRun = false;
+    try {
+      logger.debug('Relodaing');
+      await page.reload();
+      await waitForData(page);
+      logger.debug('Reloaded the page');
+    } catch (e) {
+      logger.error('Failed reloading', e);
+      await stop();
+      return;
     }
 
     const knownValues = valuesManager.getLastValues();
@@ -110,10 +105,26 @@ async function run() {
     } catch (e) {
       logger.error('Failed sending Telegram Messages', e);
     }
+
+    pauseUntillTomorrow();
   }
 
   async function stop() {
     reloadTask.stop();
     await browser.close();
+  }
+
+  function pauseUntillTomorrow() {
+    logger.debug('Pausing until tomorrow');
+    reloadTask.stop();
+    const now = new Date();
+    const tomorrow = new Date(`${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate() + 1}`);
+    const delay = tomorrow - now;
+    setTimeout(restart, delay);
+
+    function restart() {
+      logger.debug('Restarting');
+      reloadTask.start();
+    }
   }
 }
