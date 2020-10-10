@@ -61,7 +61,7 @@ class ValuesManager {
   saveValues() {
     this.updateFilePath();
     logger.debug('Saving data to file');
-    return fs.writeJSON(this.#valuesFilePath, this.#allValues, { flag: 'w' })
+    return fs.writeJSON(this.#valuesFilePath, this.#allValues, { flag: 'w', spaces: 2 })
       .catch((e) => logger.error('Unable to save data to file', e));
   }
 }
