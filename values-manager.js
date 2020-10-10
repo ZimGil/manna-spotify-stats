@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs-extra');
 const assign = require('lodash/assign');
+const identity = require('lodash/identity')
+const isEmpty = require('lodash/isEmpty');
 const orderBy = require('lodash/orderBy');
 const logger = require('./logger');
 
@@ -17,12 +19,14 @@ class ValuesManager {
       this.#allValues = fs.readJSONSync(this.#valuesFilePath,);
       logger.debug(`Restored data from: ${this.#valuesFilePath}`);
     } catch {
-      this.#allValues = {}
       logger.warn(`Unable to restore data from: ${this.#valuesFilePath}`);
+      this.#allValues = {};
     }
 
-    const lastEntry = orderBy(this.#allValues, 'date', 'desc')[0]
-    this.#lastValues = lastEntry && lastEntry.values || {};
+    // Get last value from all values if available
+    this.#lastValues = isEmpty(this.#allValues)
+      ? this.#getLastValuesPreviousFile()
+      : this.#getLatestEntryFromData();
   }
 
   getLastValues() { return this.#lastValues; }
@@ -49,12 +53,6 @@ class ValuesManager {
       !options.startup && logger.warn('Changed data file path to an existing one');
       return false;
     }
-    logger.debug(`Creating a new data file: ${this.#valuesFilePath}`);
-    try {
-      await fs.createFile(this.#valuesFilePath);
-    } catch (e) {
-      logger.error(`Unable to create data file: ${this.#valuesFilePath}`);
-    }
     return true;
   }
 
@@ -63,6 +61,26 @@ class ValuesManager {
     logger.debug('Saving data to file');
     return fs.writeJSON(this.#valuesFilePath, this.#allValues, { flag: 'w', spaces: 2 })
       .catch((e) => logger.error('Unable to save data to file', e));
+  }
+
+  #getLastValuesPreviousFile = () => {
+    const dataFiles = fs.readdirSync(MANNA_DATA_DIR);
+    if (!dataFiles.length) { return {}; }
+    const orderMakers = [isFile, identity];
+    const latestDataFileName = orderBy(dataFiles, orderMakers, ['desc', 'desc'])[0];
+    const latestDataFilePath = path.join(MANNA_DATA_DIR, latestDataFileName);
+    logger.debug(`Getting last known values from: ${latestDataFilePath}`);
+    const latestData = fs.readJSONSync(latestDataFilePath);
+    return this.#getLatestEntryFromData(latestData);
+
+    function isFile(fileName) {
+      const filePath = path.join(MANNA_DATA_DIR, fileName);
+      return fs.statSync(filePath).isFile();
+    }
+  }
+
+  #getLatestEntryFromData = (data = this.#allValues) => {
+    return orderBy(data, 'date', 'desc')[0].values;
   }
 }
 
