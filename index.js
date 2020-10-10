@@ -110,10 +110,26 @@ async function run() {
     } catch (e) {
       logger.error('Failed sending Telegram Messages', e);
     }
+
+    pauseUntillTomorrow();
   }
 
   async function stop() {
     reloadTask.stop();
     await browser.close();
+  }
+
+  function pauseUntillTomorrow() {
+    logger.debug('Pausing until tomorrow');
+    reloadTask.stop();
+    const now = new Date();
+    const tomorrow = new Date(`${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate() + 1}`);
+    const delay = tomorrow - now;
+    setTimeout(restart, delay);
+
+    function restart() {
+      logger.debug('Restarting');
+      reloadTask.start();
+    }
   }
 }
