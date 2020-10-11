@@ -1,4 +1,5 @@
 const os = require('os');
+const dateFormat = require('date-format');
 const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
@@ -115,10 +116,10 @@ async function run() {
   }
 
   function pauseUntillTomorrow() {
-    logger.debug('Pausing until tomorrow');
-    reloadTask.stop();
     const now = new Date();
     const tomorrow = new Date(`${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate() + 1}`);
+    logger.debug(`Pausing reload schedule until ${dateFormat(tomorrow)}`);
+    reloadTask.stop();
     const delay = tomorrow - now;
     setTimeout(restart, delay);
 
