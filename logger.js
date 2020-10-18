@@ -12,7 +12,7 @@ if (process.env.NODE_ENV !== 'production') {
 log4js.configure({
   appenders: {
     stdout: { type: 'stdout' },
-    file: { type: 'file', filename: `${logFilesPath}/debug.log`, maxLogSize: 1048576, compress: true, keepFileExt: true },
+    file: { type: 'file', filename: `${logFilesPath}/debug.log`, maxLogSize: 1048576, compress: true },
     errorsFile: { type: 'file', filename: `${logFilesPath}/error.log` },
     errorsOnly: { type: 'logLevelFilter', appender: 'errorsFile', level: 'error' }
   },
