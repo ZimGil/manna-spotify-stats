@@ -21,7 +21,8 @@ class Screenshot {
   }
 
   async takeScreenshot(page, _reason) {
-    const reason = screenshotReasonsEnum[_reason] || _reason;
+    const reason = screenshotReasonsEnum[_reason];
+    if (!reason) { return logger.debug('Skipping a screenshot - irrelevant reason')}
     if (this.#reason === reason) { return logger.debug('Skipping a screenshot - repetitive reason'); }
     this.#reason = reason;
     const dateString = new Date().toISOString().replace(/:/g, '_');
@@ -67,7 +68,8 @@ const screenshotReasonsEnum = {
   NO_REASON: null,
   ERROR_GETTING_VALUES: 'ERROR_GETTING_VALUES',
   NO_VALUES: 'NO_VALUES',
-  MISSING_VALUES: 'MISSING_VALUES'
+  MISSING_VALUES: 'MISSING_VALUES',
+  FAILED_RELOADING: 'FAILED_RELOADING'
 };
 
 exports.Screenshot = new Screenshot();
