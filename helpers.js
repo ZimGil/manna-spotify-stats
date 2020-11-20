@@ -4,6 +4,14 @@ const logger = require('./logger');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
 
 const dataRowsSelector = '[data-testid=songs-table] tbody > tr';
+const dataColumnIndices = {
+  ID: 0,
+  NAME: 1,
+  STREAMS: 3,
+  LISTENERS: 4,
+  VIEWS: 5,
+  SAVES: 6
+}
 
 const {
   SPOTIFY_USERNAME,
@@ -30,17 +38,17 @@ exports.spotifyLogin = async function (page) {
 exports.getValues = async function (page) {
   let values = {}
   try {
-    values = await page.evaluate((dataRowsSelector) => {
+    values = await page.evaluate((dataRowsSelector, dataColumnIndices) => {
       const rows = document.querySelectorAll(dataRowsSelector);
       return Array.from(rows).reduce((values, node) => {
-        values[node.children[1].title] = {
-          streams: +node.children[3].title.replace(/,/g, ''),
-          listeners: +node.children[4].title.replace(/,/g, ''),
-          saves: +node.children[5].title.replace(/,/g, '')
+        values[node.children[dataColumnIndices.NAME].title] = {
+          streams: +node.children[dataColumnIndices.STREAMS].title.replace(/,/g, ''),
+          listeners: +node.children[dataColumnIndices.LISTENERS].title.replace(/,/g, ''),
+          saves: +node.children[dataColumnIndices.SAVES].title.replace(/,/g, '')
         }
         return values;
       }, {});
-    }, dataRowsSelector);
+    }, dataRowsSelector, dataColumnIndices);
     logger.debug('Received Values', values);
 
   } catch (e) {
