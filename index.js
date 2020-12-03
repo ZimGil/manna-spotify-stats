@@ -9,6 +9,7 @@ const isEqual = require('lodash/isEqual');
 const noop = require('lodash/noop');
 const pickBy = require('lodash/pickBy');
 const size = require('lodash/size');
+const { DateTime } = require('luxon')
 const logger = require('./logger');
 const { getValues, getMessage, spotifyLogin, isBiggerValues, waitForData } = require('./helpers');
 const { Screenshot, screenshotReasonsEnum } = require('./screenshot');
@@ -117,9 +118,9 @@ async function run() {
   }
 
   function pauseUntillTomorrow() {
-    const now = new Date();
-    const tomorrow = new Date(`${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate() + 1}`);
-    logger.debug(`Pausing reload schedule until ${dateFormat(tomorrow)}`);
+    const now = DateTime.local();
+    const tomorrow = now.plus({ days: 1 }).set({ hours: 14, minutes: 0, seconds: 0, milliseconds: 0 });
+    logger.debug(`Pausing reload schedule until ${tomorrow.toFormat('yyyy-MM-dd\'T\'HH:mm:ss.SSS')}`);
     reloadTask.stop();
     const delay = tomorrow - now;
     setTimeout(restart, delay);
