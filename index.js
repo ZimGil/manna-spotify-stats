@@ -76,7 +76,7 @@ async function run() {
     } catch (e) {
       logger.error('Failed reloading', e);
       await Screenshot.takeScreenshot(page, screenshotReasonsEnum.FAILED_RELOADING)
-      await stop();
+      // await stop();
       return;
     }
 
