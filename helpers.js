@@ -89,9 +89,9 @@ exports.waitForData = async function (page) {
 
 function getPercentDiff(current, known) {
   if (!known || current === known) { return ''; }
-  const perecntage = Math.abs((((current - known) * 100) / known).toFixed(2));
+  const percentage = Math.abs((((current - known) * 100) / known).toFixed(2));
   const operator = current > known ? '+' : '-';
-  return `(${operator}${perecntage.toFixed(2)}%)`;
+  return `(${operator}${percentage.toFixed(2)}%)`;
 }
 
 function escapeReservedChars(str) {

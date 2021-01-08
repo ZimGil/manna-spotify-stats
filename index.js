@@ -1,5 +1,4 @@
 const os = require('os');
-const dateFormat = require('date-format');
 const cron = require('node-cron');
 const puppeteer = require("puppeteer");
 const Telegram = require('messaging-api-telegram');
@@ -69,7 +68,7 @@ async function run() {
 
   async function reloadAndCheck() {
     try {
-      logger.debug('Relodaing');
+      logger.debug('Reloading');
       await page.reload();
       await waitForData(page);
       logger.debug('Reloaded the page');
@@ -109,7 +108,7 @@ async function run() {
       logger.error('Failed sending Telegram Messages', e);
     }
 
-    pauseUntillTomorrow();
+    pauseUntilTomorrow();
   }
 
   async function stop() {
@@ -117,7 +116,7 @@ async function run() {
     await browser.close();
   }
 
-  function pauseUntillTomorrow() {
+  function pauseUntilTomorrow() {
     const now = DateTime.local();
     const tomorrow = now.plus({ days: 1 }).set({ hours: 14, minutes: 0, seconds: 0, milliseconds: 0 });
     logger.debug(`Pausing reload schedule until ${tomorrow.toFormat('yyyy-MM-dd\'T\'HH:mm:ss.SSS')}`);
